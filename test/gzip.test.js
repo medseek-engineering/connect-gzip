@@ -74,31 +74,36 @@ var best = server(gzip.gzip({ flags: '--best' }), function(res, headers, body) {
   res.writeHead(200, headers);
   res.end(body);
 });
+var kilobyteMin = server(gzip.gzip({ minContentLength: 1000 }), function(res, headers, body) {
+  res.writeHead(200, headers);
+  res.end(body);
+});
 
 describe('gzip test', function() {
   describe('uncompressable', function() {
-    it('no Accept-Encoding', function() {
-       testUncompressed(css, cssPath, {}, cssBody, matchCss);  
+
+    it.only('no Accept-Encoding', function(done) {
+       testUncompressed(done, css, cssPath, {}, cssBody, matchCss);  
     });
 
-    it('no Accept-Encoding', function() {
-      testUncompressed(css, cssPath, {}, cssBody, matchCss);
+    it('no Accept-Encoding', function(done) {
+      testUncompressed(done, css, cssPath, {}, cssBody, matchCss);
     });
 
-    it('does not accept gzip', function() {
-      testUncompressed(css, cssPath, { 'Accept-Encoding': 'deflate' }, cssBody, matchCss);
+    it('does not accept gzip', function(done) {
+      testUncompressed(done, css, cssPath, { 'Accept-Encoding': 'deflate' }, cssBody, matchCss);
     });
 
-    it('unmatched mime type', function() {
-      testUncompressed(css, htmlPath, { 'Accept-Encoding': 'gzip' }, htmlBody, matchHtml);
+    it('unmatched mime type', function(done) {
+      testUncompressed(done, css, htmlPath, { 'Accept-Encoding': 'gzip' }, htmlBody, matchHtml);
     });
 
-    it('HEAD request', function() {
-      testUncompressed(css, cssPath, { 'Accept-Encoding': 'gzip' }, '', matchCss, 'HEAD');
+    it('HEAD request', function(done) {
+      testUncompressed(done, css, cssPath, { 'Accept-Encoding': 'gzip' }, '', matchCss, 'HEAD');
     });
 
-    it('setHeaders, write, end', function() {
-      testUncompressed(setHeadersWrite, htmlPath, {}, htmlBody, matchHtml);
+    it('setHeaders, write, end', function(done) {
+      testUncompressed(done, setHeadersWrite, htmlPath, {}, htmlBody, matchHtml);
     });
 
     it('setHeaders, writeHead, end', function() {
@@ -121,6 +126,11 @@ describe('gzip test', function() {
     it('writeHead, end', function() {
       testUncompressed(writeHeadEnd, htmlPath, {}, htmlBody, matchHtml);
     });
+
+    it('size below minContentLength threshold', function() {
+      testUncompressed(kilobyteMin, htmlPath, { 'Content-Length': 900 }, htmlBody, matchHtml);
+    });
+
   });
 
   describe('compressable', function() {
@@ -175,6 +185,14 @@ describe('gzip test', function() {
 
     it('writeHead, end', function() {
       testCompressed(writeHeadEnd, htmlPath, { 'Accept-Encoding': 'gzip' }, htmlBody, matchHtml);
+    });
+
+    it('size equal to minContentLength threshold', function() {
+      testCompressed(kilobyteMin, htmlPath, { 'Content-Length': 1000 }, htmlBody, matchHtml);
+    });
+
+    it('size above minContentLength threshold', function() {
+      testCompressed(kilobyteMin, htmlPath, { 'Content-Length': 1001 }, htmlBody, matchHtml);
     });
 
   });

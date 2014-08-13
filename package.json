@@ -13,8 +13,9 @@
   },
   "devDependencies": {
     "should": ">=0.3.1",
-    "connect": "~2.25.5",
-    "mocha": "~1.21.4"
+    "mocha": "~1.21.4",
+    "supertest": "~0.13.0",
+    "connect": "~2.25.5"
   },
   "scripts": {
     "test": "node node_modules/mocha/bin/_mocha"

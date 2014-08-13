@@ -1,6 +1,7 @@
 var assert = require('assert'),
     should = require('should'),
-    spawn = require('child_process').spawn;
+    spawn = require('child_process').spawn,
+    request = require('supertest');
 
 function wrapTest(func, numCallbacks) {
   numCallbacks = numCallbacks || 1;
@@ -14,22 +15,18 @@ function wrapTest(func, numCallbacks) {
   }
 }
 
-exports.testUncompressed = function(app, url, headers, resBody, resType, method) {
-  return wrapTest(function(done) {
-    assert.response(app, {
-        url: url,
-        method: method ? method : 'GET',
-        headers: headers
-      }, {
-        status: 200,
-        body: resBody,
-        headers: { 'Content-Type': resType }
-      }, function(res) {
-        res.headers.should.not.have.property('content-encoding');
-        done();
-      }
-    );
-  });
+exports.testUncompressed = function(done, app, url, headers, resBody, resType, method) {
+  var req = request(app)[method ? method.toLowerCase() : 'get'](url);
+  for (var key in headers) {
+    req.set(key, headers[key]);
+  };
+  req
+  .expect(resBody)
+  .expect('content-type', resType)
+  .expect(function(res) {
+    res.headers.should.not.have.property('content-encoding');
+  })
+  .expect(200, done)
 }
 
 exports.testCompressed = function(app, url, headers, resBody, resType, method) {
