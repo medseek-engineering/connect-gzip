@@ -12,7 +12,6 @@
     "node": ">=0.6.0"
   },
   "devDependencies": {
-    "expresso": ">=0.9",
     "should": ">=0.3.1",
     "connect": "~2.25.5",
     "mocha": "~1.21.4"
