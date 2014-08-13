@@ -75,80 +75,102 @@ var best = server(gzip.gzip({ flags: '--best' }), function(res, headers, body) {
   res.end(body);
 });
 
-module.exports = {
-  'gzip test uncompressable: no Accept-Encoding': testUncompressed(
-    css, cssPath, {}, cssBody, matchCss
-  ),
-  'gzip test uncompressable: does not accept gzip': testUncompressed(
-    css, cssPath, { 'Accept-Encoding': 'deflate' }, cssBody, matchCss
-  ),
-  'gzip test uncompressable: unmatched mime type': testUncompressed(
-    css, htmlPath, { 'Accept-Encoding': 'gzip' }, htmlBody, matchHtml
-  ),
-  'gzip test compressable': testCompressed(
-    css, cssPath, { 'Accept-Encoding': 'gzip' }, cssBody, matchCss
-  ),
-  'gzip test compressable: multiple Accept-Encoding types': testCompressed(
-    css, cssPath, { 'Accept-Encoding': 'deflate, gzip, sdch' }, cssBody, matchCss
-  ),
-  'gzip test uncompressable: HEAD request': testUncompressed(
-    css, cssPath, { 'Accept-Encoding': 'gzip' }, '', matchCss, 'HEAD'
-  ),
-  
-  'gzip test compressable: specify --best flag': testCompressed(
-    best, htmlPath, { 'Accept-Encoding': 'gzip' }, htmlBody, matchHtml
-  ),
-  
-  'gzip test uncompressable: setHeaders, writeHead, write, end': testUncompressed(
-    setHeadersWriteHeadWrite, htmlPath, {}, htmlBody, matchHtml
-  ),
-  'gzip test compressable: setHeaders, writeHead, write, end': testCompressed(
-    setHeadersWriteHeadWrite, htmlPath, { 'Accept-Encoding': 'gzip' }, htmlBody, matchHtml
-  ),
-  'gzip test uncompressable: setHeaders, writeHead, end': testUncompressed(
-    setHeadersWriteHeadEnd, htmlPath, {}, htmlBody, matchHtml
-  ),
-  'gzip test compressable: setHeaders, writeHead, end': testCompressed(
-    setHeadersWriteHeadEnd, htmlPath, { 'Accept-Encoding': 'gzip' }, htmlBody, matchHtml
-  ),
-  
-  'gzip test uncompressable: setHeaders, write, end': testUncompressed(
-    setHeadersWrite, htmlPath, {}, htmlBody, matchHtml
-  ),
-  'gzip test compressable: setHeaders, write, end': testCompressed(
-    setHeadersWrite, htmlPath, { 'Accept-Encoding': 'gzip' }, htmlBody, matchHtml
-  ),
-  'gzip test uncompressable: setHeaders, end': testUncompressed(
-    setHeadersEnd, htmlPath, {}, htmlBody, matchHtml
-  ),
-  'gzip test compressable: setHeaders, end': testCompressed(
-    setHeadersEnd, htmlPath, { 'Accept-Encoding': 'gzip' }, htmlBody, matchHtml
-  ),
+describe('gzip test', function() {
+  it('uncompressable: no Accept-Encoding', function() {
+     testUncompressed(css, cssPath, {}, cssBody, matchCss);  
+  });
+
+  it('uncompressable: no Accept-Encoding', function() {
+    testUncompressed(css, cssPath, {}, cssBody, matchCss);
+  });
+
+  it('uncompressable: does not accept gzip', function() {
+    testUncompressed(css, cssPath, { 'Accept-Encoding': 'deflate' }, cssBody, matchCss);
+  });
+
+  it('uncompressable: unmatched mime type', function() {
+    testUncompressed(css, htmlPath, { 'Accept-Encoding': 'gzip' }, htmlBody, matchHtml);
+  });
+
+  it('compressable', function() {
+    testCompressed(css, cssPath, { 'Accept-Encoding': 'gzip' }, cssBody, matchCss);
+  });
+
+  it('compressable: multiple Accept-Encoding types', function() {
+    testCompressed(css, cssPath, { 'Accept-Encoding': 'deflate, gzip, sdch' }, cssBody, matchCss);
+  });
+
+  it('uncompressable: HEAD request', function() {
+    testUncompressed(css, cssPath, { 'Accept-Encoding': 'gzip' }, '', matchCss, 'HEAD');
+  });
+
+  it('compressable: specify --best flag', function() {
+    testCompressed(best, htmlPath, { 'Accept-Encoding': 'gzip' }, htmlBody, matchHtml);
+  });
+
+  it('uncompressable: setHeaders, writeHead, write, end', function() {
+    testUncompressed(setHeadersWriteHeadWrite, htmlPath, {}, htmlBody, matchHtml);
+  });
+
+  it('compressable: setHeaders, writeHead, write, end', function() {
+    testCompressed(setHeadersWriteHeadWrite, htmlPath, { 'Accept-Encoding': 'gzip' }, htmlBody, matchHtml);
+  });
+
+  it('uncompressable: setHeaders, writeHead, end', function() {
+    testUncompressed(setHeadersWriteHeadEnd, htmlPath, {}, htmlBody, matchHtml);
+  });
+
+  it('compressable: setHeaders, writeHead, end', function() {
+    testCompressed(setHeadersWriteHeadEnd, htmlPath, { 'Accept-Encoding': 'gzip' }, htmlBody, matchHtml);
+  });
+
+  it('uncompressable: setHeaders, write, end', function() {
+    testUncompressed(setHeadersWrite, htmlPath, {}, htmlBody, matchHtml);
+  });
+
+  it('compressable: setHeaders, write, end', function() {
+    testCompressed(setHeadersWrite, htmlPath, { 'Accept-Encoding': 'gzip' }, htmlBody, matchHtml);
+  });
+
+  it('uncompressable: setHeaders, end', function() {
+    testUncompressed(setHeadersEnd, htmlPath, {}, htmlBody, matchHtml);
+  });
+
+  it('compressable: setHeaders, end', function() {
+    testCompressed(setHeadersEnd, htmlPath, { 'Accept-Encoding': 'gzip' }, htmlBody, matchHtml);
+  });
 
   // See: http://sebduggan.com/posts/ie6-gzip-bug-solved-using-isapi-rewrite
-  'gzip test uncompressable: IE6 before XP SP2': testUncompressed(
-    setHeadersEnd, htmlPath, { 'Accept-Encoding': 'gzip', 'User-Agent': 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)' }, htmlBody, matchHtml
-  ),
-  'gzip test compressable: IE6 after XP SP2': testCompressed(
-    setHeadersEnd, htmlPath, { 'Accept-Encoding': 'gzip', 'User-Agent': 'Mozilla/5.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1' }, htmlBody, matchHtml
-  ),
-  'gzip test compressable: IE7': testCompressed(
-    setHeadersEnd, htmlPath, { 'Accept-Encoding': 'gzip', 'User-Agent': 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)' }, htmlBody, matchHtml
-  ),
-  'gzip test compressable: Chrome': testCompressed(
-    setHeadersEnd, htmlPath, { 'Accept-Encoding': 'gzip', 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_1) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/14.0.835.186 Safari/535.1' }, htmlBody, matchHtml
-  ),
+  it('uncompressable: IE6 before XP SP2', function() {
+    testUncompressed(setHeadersEnd, htmlPath, { 'Accept-Encoding': 'gzip', 'User-Agent': 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)' }, htmlBody, matchHtml);
+  });
+
+  it('compressable: IE6 after XP SP2', function() {
+    testCompressed(setHeadersEnd, htmlPath, { 'Accept-Encoding': 'gzip', 'User-Agent': 'Mozilla/5.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1' }, htmlBody, matchHtml);
+  });
+
+  it('compressable: IE7', function() {
+    testCompressed(setHeadersEnd, htmlPath, { 'Accept-Encoding': 'gzip', 'User-Agent': 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)' }, htmlBody, matchHtml);
+  });
+
+  it('compressable: Chrome', function() {
+    testCompressed(setHeadersEnd, htmlPath, { 'Accept-Encoding': 'gzip', 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_1) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/14.0.835.186 Safari/535.1' }, htmlBody, matchHtml);
+  });
+
+  it('uncompressable: writeHead, write, end', function() {
+    testUncompressed(writeHeadWrite, htmlPath, {}, htmlBody, matchHtml);
+  });
+
+  it('compressable: writeHead, write, end', function() {
+    testCompressed(writeHeadWrite, htmlPath, { 'Accept-Encoding': 'gzip' }, htmlBody, matchHtml);
+  });
+
+  it('uncompressable: writeHead, end', function() {
+    testUncompressed(writeHeadEnd, htmlPath, {}, htmlBody, matchHtml);
+  });
   
-  'gzip test uncompressable: writeHead, write, end': testUncompressed(
-    writeHeadWrite, htmlPath, {}, htmlBody, matchHtml
-  ),
-  'gzip test compressable: writeHead, write, end': testCompressed(
-    writeHeadWrite, htmlPath, { 'Accept-Encoding': 'gzip' }, htmlBody, matchHtml
-  ),
-  'gzip test uncompressable: writeHead, end': testUncompressed(
-    writeHeadEnd, htmlPath, {}, htmlBody, matchHtml
-  ),
-  'gzip test compressable: writeHead, end': testCompressed(
-    writeHeadEnd, htmlPath, { 'Accept-Encoding': 'gzip' }, htmlBody, matchHtml
-  ),
-}
+  it('compressable: writeHead, end', function() {
+    testCompressed(writeHeadEnd, htmlPath, { 'Accept-Encoding': 'gzip' }, htmlBody, matchHtml);
+  });
+
+});
