@@ -8,8 +8,10 @@ var connect = require('connect'),
     fixturesPath = __dirname + '/fixtures',
     cssBody = fs.readFileSync(fixturesPath + '/style.css', 'utf8'),
     htmlBody = fs.readFileSync(fixturesPath + '/index.html', 'utf8'),
+    largeBody = fs.readFileSync(fixturesPath + '/large.html', 'utf8')
     cssPath = '/style.css',
     htmlPath = '/',
+    largePath = '/large.html',
     matchCss = /text\/css/,
     matchHtml = /text\/html/;
 
@@ -25,6 +27,9 @@ function server() {
     } else if (req.url === htmlPath) {
       headers['Content-Type'] = 'text/html; charset=utf-8';
       body = htmlBody;
+    } else if (req.url === largePath) {
+      headers['Content-Type'] = 'text/html charset=utf-8';
+      body = largeBody;
     }
     headers['Content-Length'] = body.length;
     callback(res, headers, body);
@@ -71,6 +76,10 @@ var css = server(gzip.gzip({ matchType: /css/ }), function(res, headers, body) {
   res.end(body);
 });
 var best = server(gzip.gzip({ flags: '--best' }), function(res, headers, body) {
+  res.writeHead(200, headers);
+  res.end(body);
+});
+var kilobyteMin = server(gzip.gzip({ minContentLength: 1000 }), function(res, headers, body) {
   res.writeHead(200, headers);
   res.end(body);
 });
@@ -129,6 +138,10 @@ describe('gzip', function() {
       testUncompressed(done, setHeadersWriteHeadWrite, htmlPath, {}, htmlBody, matchHtml);
     });
 
+    it('size below minContentLength threshold', function(done) {
+      testUncompressed(done, kilobyteMin, htmlPath, { 'Content-Length': 900, 'Accept-Encoding': 'gzip' }, htmlBody, matchHtml);
+    });
+
   });
 
   describe('compressable', function() {
@@ -179,6 +192,10 @@ describe('gzip', function() {
 
     it('writeHead, end', function(done) {
       testCompressed(done, writeHeadEnd, htmlPath, { 'Accept-Encoding': 'gzip' }, htmlBody, matchHtml);
+    });
+
+    it('size above minContentLength threshold', function(done) {
+      testCompressed(done, kilobyteMin, largePath, { 'Accept-Encoding': 'gzip' }, largeBody, matchHtml);
     });
 
   });
