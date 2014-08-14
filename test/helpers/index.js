@@ -1,104 +1,112 @@
-var assert = require('assert'),
-    should = require('should'),
-    spawn = require('child_process').spawn;
+var assert = require('assert')
+    http = require('http')
+    zlib = require('zlib'),
+    buffer = require('buffer').Buffer;
 
-function wrapTest(func, numCallbacks) {
-  numCallbacks = numCallbacks || 1;
-  return function(beforeExit) {
-    var n = 0;
-    function done() { n++; }
-    func(done);
-    beforeExit(function() {
-      n.should.equal(numCallbacks);
-    });
-  }
+var port = 2540642;
+
+exports.testUncompressed = function(done, app, path, headers, resBody, resType, method) {
+  assert.response(app, {
+      path: path,
+      method: method ? method : 'GET',
+      headers: headers,
+      port: port++
+    }, {
+      status: 200,
+      body: resBody,
+      headers: { 'Content-Type': resType }
+    }, function(res) {
+      assert.equal(res.headers['content-encoding'], undefined);
+      done();
+    }
+  );
 }
 
-exports.testUncompressed = function(app, url, headers, resBody, resType, method) {
-  return wrapTest(function(done) {
-    assert.response(app, {
-        url: url,
-        method: method ? method : 'GET',
-        headers: headers
-      }, {
-        status: 200,
-        body: resBody,
-        headers: { 'Content-Type': resType }
-      }, function(res) {
-        res.headers.should.not.have.property('content-encoding');
+exports.testCompressed = function(done, app, path, headers, resBody, resType, method) {
+  assert.response(app, {
+      path: path,
+      method: method ? method : 'GET',
+      headers: headers,
+      encoding: 'binary',
+      port: port++
+    }, {
+      status: 200,
+      headers: {
+        'Content-Type': resType,
+        'Content-Encoding': 'gzip',
+        'Vary': 'Accept-Encoding'
+      }
+    }, function(res) {
+      assert.notEqual(res.body, resBody);
+      zlib.gunzip(res.buffer, function(err, body) {
+        assert.ifError(err);
+        assert.equal(body, resBody);
         done();
+      });
+    }
+  );
+
+}
+
+exports.testRedirect = function(done, app, path, headers, location) {
+  assert.response(app, {
+      path: path,
+      headers: headers,
+      port: port++
+    }, {
+      status: 301,
+      headers: {
+        'Location': location
       }
-    );
-  });
+    }, function() { done(); }
+  );
 }
 
-exports.testCompressed = function(app, url, headers, resBody, resType, method) {
-  return wrapTest(function(done) {
-    assert.response(app, {
-        url: url,
-        method: method ? method : 'GET',
-        headers: headers,
-        encoding: 'binary'
-      }, {
-        status: 200,
-        headers: {
-          'Content-Type': resType,
-          'Content-Encoding': 'gzip',
-          'Vary': 'Accept-Encoding'
-        }
-      }, function(res) {
-        res.body.should.not.equal(resBody);
-        gunzip(res.body, function(err, body) {
-          body.should.equal(resBody);
-          done();
-        });
+exports.testMaxAge = function(done, app, path, headers, maxAge) {
+  assert.response(app, {
+      path: path,
+      headers: headers,
+      port: port++
+    }, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'public, max-age=' + Math.floor(maxAge / 1000)
       }
-    );
-  });
+    }, function() { done(); }
+  );
 }
 
-exports.testRedirect = function(app, url, headers, location) {
-  return wrapTest(function(done) {
-    assert.response(app, {
-        url: url,
-        headers: headers
-      }, {
-        status: 301,
-        headers: {
-          'Location': location
-        }
-      }, done
-    );
-  });
+assert.response = function(server, req, expected, done) {
+  server.listen(req.port);
+
+  http.request(req, function(res) {
+
+    var dataArr = [];
+
+    res.on('data', function(chunk) {
+      var x = new buffer(chunk);
+      dataArr.push(x);
+    });
+
+    res.on('error', function(err) {
+      assert.ifError(err);
+    });
+
+    res.on('end', function() {
+      res.buffer = buffer.concat(dataArr);
+      assert.equal(res.statusCode, expected.status);
+      for (key in expected.headers) {
+        assert.header(key, expected.headers[key], res);
+      };
+      done(res);
+    });
+
+  }).end();
 }
 
-exports.testMaxAge = function(app, url, headers, maxAge) {
-  return wrapTest(function(done) {
-    assert.response(app, {
-        url: url,
-        headers: headers
-      }, {
-        status: 200,
-        headers: {
-          'Cache-Control': 'public, max-age=' + Math.floor(maxAge / 1000)
-        }
-      }, done
-    );
-  });
-}
-
-function gunzip(data, callback) {
-  var process = spawn('gunzip', ['-c']),
-      out = '',
-      err = '';
-  process.stdout.on('data', function(data) {
-    out += data;
-  });
-  process.stderr.on('data', function(data) {
-    err += data;
-  });
-  process.on('exit', function(code) {
-    if (callback) callback(err, out);
-  });
-  process.stdin.end(data, 'binary');
+assert.header = function (name, expected, res) {
+  var actual = res.headers[name.toLowerCase()];
+  expected instanceof RegExp
+    ? assert(expected.test(actual))
+    : assert.equal(expected, actual);
 }
